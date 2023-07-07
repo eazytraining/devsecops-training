@@ -1,0 +1,15 @@
+# Private runner
+
+# https://docs.gitlab.com/runner/register/
+
+# generate authentication token - https://docs.gitlab.com/ee/security/token_overview.html#runner-authentication-tokens-also-called-runner-tokens
+
+export RUNNER_AUTHENTICATION_TOKEN=<your token>
+
+sudo gitlab-runner register \
+  --non-interactive \
+  --url "https://gitlab.com/" \
+  --token $RUNNER_AUTHENTICATION_TOKEN\
+  --description "docker-runner" \
+  --executor "docker" \
+  --docker-image docker:dind

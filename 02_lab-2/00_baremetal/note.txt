@@ -1,0 +1,49 @@
+# BACKEND
+---------
+
+sudo apt install python3-dev libsasl2-dev libldap2-dev libssl-dev -y
+pip3 install flask==2.0.0 flask_httpauth==4.1.0 flask_simpleldap python-dotenv==0.14.0 Werkzeug==2.0.0
+
+
+sudo mkdir /data
+sudo cp student_age.json /data/student_age.json
+
+curl -u toto:python -X GET http://127.0.0.1:5000/pozos/api/v1.0/get_student_ages
+
+# FRONTEND
+----------
+
+# Install apache2
+
+sudo apt install -y apache2
+sudo systemctl start apache2
+sudo systemctl enable apache2
+
+sudo apt install -y php7.4 libapache2-mod-php7.4
+sudo a2enmod php7.4
+
+
+echo "export USERNAME=toto" | sudo tee -a  /etc/apache2/envvars
+echo "export PASSWORD=python" | sudo tee -a /etc/apache2/envvars
+
+sudo mv /var/www/html/index.html /tmp/
+sudo cp index.php /var/www/html/
+
+sudo systemctl restart apache2
+sudo systemctl status apache2
+
+
+# Stop app
+ 
+sudo systemctl stop apache2
+sudo systemctl disable apache2
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,18 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+Vagrant.configure("2") do |config|
+  config.vm.define "devsecops" do |devsecops|
+    devsecops.vm.box = "fasmat/ubuntu2004-desktop"
+    devsecops.vm.network "private_network", type: "dhcp"
+    devsecops.vm.hostname = "devsecops"
+    devsecops.vm.provider "virtualbox" do |v|
+      v.name = "devsecops"
+      v.memory = 4096
+      v.cpus = 2
+    end
+    devsecops.vm.provision :shell do |shell|
+      shell.path = "install_devsecops.sh"
+    end
+  end
+end

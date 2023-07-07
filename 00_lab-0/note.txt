@@ -1,0 +1,17 @@
+# create VM
+
+vagrant up
+
+# get ngrok token
+Go to https://dashboard.ngrok.com/signup 
+After login your token is here : https://dashboard.ngrok.com/get-started/your-authtoken
+
+ngrok config add-authtoken <token>
+
+# Install apache
+sudo apt install -y apache2
+sudo systemctl start apache2
+sudo systemctl enable apache2
+
+# run ngrok with ssh
+ngrok http 80
