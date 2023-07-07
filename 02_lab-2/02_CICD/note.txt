@@ -2,3 +2,4 @@
 in project devsecops -> settings -> CI/CD -> Variables
 DOCKER_PASSWORD and DOCKER_PASSWORD
 
+# configure 

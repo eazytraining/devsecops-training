@@ -15,3 +15,20 @@ sudo systemctl enable apache2
 
 # run ngrok with ssh
 ngrok http 80
+
+# configure vscode with project
+
+ssh-keygen -t rsa
+cat /home/vagrant/.ssh/id_rsa.pub
+git config --global user.name "<gitlab username>"
+git config --global user.email "<gitlab email>"
+git clone git@gitlab.com:<github username>/devsecops.git
+
+cd devsecops
+code .
+
+# remove everything except "# devsecops"
+# commit and push
+
+
+

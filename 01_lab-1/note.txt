@@ -12,4 +12,8 @@ sudo gitlab-runner register \
   --token $RUNNER_AUTHENTICATION_TOKEN\
   --description "docker-runner" \
   --executor "docker" \
-  --docker-image docker:dind
+  --docker-image docker:dind \
+  --docker-privileged \
+  --docker-volumes '/var/run/docker.sock:/var/run/docker.sock'
+
+sudo systemctl restart gitlab-runner

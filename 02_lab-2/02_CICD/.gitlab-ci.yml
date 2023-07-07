@@ -1,44 +1,48 @@
 image: docker:stable
-default:
-  tags:
-    - docker-runner
+
+variables:
+  DOCKER_DRIVER: overlay2
+
+services:
+  - name: docker:dind
+    alias: docker
 
 stages:
   - Build image
-  - Run image
   - Test image
-  - Clean container
   - Push to Docker Hub
 
 docker build:
   stage: Build image
   script:
   - docker info
-  - docker build -t $DOCKER_USERNAME/student-list-api:gitlab-ci ./simple_api
+  - docker build -t student-list-api ./simple_api
+  - docker save student-list-api > student-list-api.tar
+  artifacts:
+    paths:
+      - student-list-api.tar
 
-docker run:
-  stage: Run image
-  script:
-  - docker rm -vf student-list-api || echo "container already deleted"
-  - docker run -d --name=student-list-api -p 5000:5000 $DOCKER_USERNAME/student-list-api:gitlab-ci
-  - docker cp ${PWD}/simple_api/student_age.json student-list-api:/data/student_age.json
 
 docker test:
   stage: Test image
   before_script:
-  - apk add --update curl python && rm -rf /var/cahe/apk/*
+  - apk add --update curl python3 && rm -rf /var/cahe/apk/*
   script:
-  - if [ "$(curl -u toto:python -X GET http://172.17.0.1:5000/pozos/api/v1.0/get_student_ages | python -c "import sys, json; print json.load(sys.stdin)['student_ages']['bob']")" = "13" ] && [ "$(curl -u toto:python -X GET http://172.17.0.1:5000/pozos/api/v1.0/get_student_ages | python -c "import sys, json; print json.load(sys.stdin)['student_ages']['alice']")" = "12" ]; then echo "test OK"; exit 0; else echo "test KO"; exit 1; fi
+  - docker load < student-list-api.tar
+  - docker rm -vf student-list-api || echo "container already deleted"
+  - docker run -d --name=student-list-api -p 5000:5000 student-list-api
+  - docker cp ${PWD}/simple_api/student_age.json student-list-api:/data/student_age.json
+  - sleep 5
+  - if [ $CI_RUNNER_TAGS == \[\"docker-runner\"\] ] ; then app=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-api); echo "use local runner"; else app=docker; echo "use gitlab saas runner"; fi
+  - if [ "$(curl -u toto:python -X GET http://$app:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$app:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
 
-docker clean:
-  stage: Clean container
-  script:
-  - docker rm -vf student-list-api
- 
 docker push:
   stage: Push to Docker Hub
   only:
-  - master
+  - main
   script:
+  - docker load < student-list-api.tar
+  - docker tag student-list-api $DOCKER_USERNAME/student-list-api:${CI_COMMIT_REF_NAME}
+  - docker tag student-list-api $DOCKER_USERNAME/student-list-api:${CI_COMMIT_SHORT_SHA}
   - echo $DOCKER_PASSWORD | docker login -u$DOCKER_USERNAME --password-stdin
-  - docker push dirane/student-list-api:gitlab-ci
+  - docker push $DOCKER_USERNAME/student-list-api:${CI_COMMIT_SHORT_SHA}
