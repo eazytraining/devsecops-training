@@ -20,11 +20,10 @@ services:
   - docker exec student-list-website  sh -c 'rm -rf /var/www/html/index.html'
   - docker cp ${PWD}/website/index.php student-list-website:/var/www/html/
   - if [ $CI_RUNNER_TAGS == \[\"docker-runner\"\] ] ; then backend=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-api); frontend=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-website); echo "use local runner"; else backend=docker; frontend=docker:8080 ; echo "use gitlab saas runner"; fi
-  - curl $frontend | grep -q "Student Checking App"
+  after_script:
   - docker rm -vf student-list-website || echo "website container already deleted"
-  - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
-
-
+  - docker rm -vf student-list-api || echo "api container already deleted"
+  
 stages:
   - Build image
   - Test image
@@ -46,8 +45,8 @@ docker test:
   stage: Test image
   <<: *run
   script:
-  - (curl $frontend | grep -q "Student Checking App") && (docker rm -vf student-list-website || echo "website container already deleted")
-  - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
+  - (curl $frontend | grep -q "Student Checking App") || echo "website KO"
+  - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; exit 0; else echo "test KO"; exit 1; fi
   
 
 docker push:
