@@ -15,7 +15,7 @@ services:
       - api-pozos
 
   api-pozos:
-    image: api-pozos:v1
+    image: student-list-api:v1
     volumes:
       - ./simple_api/student_age.json:/data/student_age.json
     networks:

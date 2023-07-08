@@ -1,11 +1,11 @@
 # Run container
-docker build -t api-pozos:v1 .
+docker build -t student-list-api:v1 .
 docker compose up -d
 
 # tag and push
-docker tag api-pozos:v1 <dockerhub username>/api-pozos:v1
+docker tag api-pozos:v1 <dockerhub username>/student-list-api:v1
 docker login
-docker push <dockerhub username>/api-pozos:v1
+docker push <dockerhub username>/student-list-api:v1
 
 # delete application
 docker compose down -v
