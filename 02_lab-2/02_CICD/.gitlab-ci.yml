@@ -7,6 +7,24 @@ services:
   - name: docker:dind
     alias: docker
 
+.run_template: &run
+  before_script:
+  - apk add --update curl python3 && rm -rf /var/cahe/apk/*
+  - docker load < student-list-api.tar
+  - docker rm -vf student-list-website || echo "website container already deleted"
+  - docker rm -vf student-list-api || echo "api container already deleted"
+  - docker run -d --name=student-list-api -p 5000:5000 student-list-api
+  - docker cp ${PWD}/simple_api/student_age.json student-list-api:/data/student_age.json
+  - sleep 5
+  - docker run -d --name=student-list-website --link student-list-api:api-pozos -p 8080:80 php:apache
+  - docker exec student-list-website  sh -c 'rm -rf /var/www/html/index.html'
+  - docker cp ${PWD}/website/index.php student-list-website:/var/www/html/
+  - if [ $CI_RUNNER_TAGS == \[\"docker-runner\"\] ] ; then backend=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-api); frontend=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-website); echo "use local runner"; else backend=docker; frontend=docker:8080 ; echo "use gitlab saas runner"; fi
+  - curl $frontend | grep -q "Student Checking App"
+  - docker rm -vf student-list-website || echo "website container already deleted"
+  - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
+
+
 stages:
   - Build image
   - Test image
@@ -26,16 +44,11 @@ docker build:
 
 docker test:
   stage: Test image
-  before_script:
-  - apk add --update curl python3 && rm -rf /var/cahe/apk/*
+  <<: *run
   script:
-  - docker load < student-list-api.tar
-  - docker rm -vf student-list-api || echo "container already deleted"
-  - docker run -d --name=student-list-api -p 5000:5000 student-list-api
-  - docker cp ${PWD}/simple_api/student_age.json student-list-api:/data/student_age.json
-  - sleep 5
-  - if [ $CI_RUNNER_TAGS == \[\"docker-runner\"\] ] ; then app=$(docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' student-list-api); echo "use local runner"; else app=docker; echo "use gitlab saas runner"; fi
-  - if [ "$(curl -u toto:python -X GET http://$app:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$app:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
+  - (curl $frontend | grep -q "Student Checking App") && (docker rm -vf student-list-website || echo "website container already deleted")
+  - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; docker rm -vf student-list-api; exit 0; else echo "test KO";docker rm -vf student-list-api; exit 1; fi
+  
 
 docker push:
   stage: Push to Docker Hub
