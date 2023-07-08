@@ -9,7 +9,7 @@ services:
 
 .run_template: &run
   before_script:
-  - apk add --update curl python3 && rm -rf /var/cahe/apk/*
+  - apk add --update curl python3 git perl && rm -rf /var/cahe/apk/*
   - docker load < student-list-api.tar
   - docker rm -vf student-list-website || echo "website container already deleted"
   - docker rm -vf student-list-api || echo "api container already deleted"
@@ -41,6 +41,7 @@ docker build:
     paths:
       - student-list-api.tar
 
+
 docker test:
   stage: Test image
   <<: *run
@@ -48,6 +49,7 @@ docker test:
   - (curl $frontend | grep -q "Student Checking App") || echo "website KO"
   - if [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['bob'])")" = "13" ] && [ "$(curl -u toto:python -X GET http://$backend:5000/pozos/api/v1.0/get_student_ages | python3 -c "import sys, json; print(json.load(sys.stdin)['student_ages']['alice'])")" = "12" ]; then echo "test OK"; exit 0; else echo "test KO"; exit 1; fi
   
+
 apache scan:
   stage: Scan App
   <<: *run
@@ -59,6 +61,16 @@ apache scan:
   artifacts:
     paths:
       - frontend-apache-report.xml
+
+secret scan:
+  stage: Scan App
+  image: golang:latest
+  before_script:
+    - git clone https://github.com/trufflesecurity/trufflehog.git
+    - cd trufflehog
+    - go install
+  script:
+    - trufflehog git $CI_REPOSITORY_URL --since-commit HEAD --only-verified --fail
 
 docker push:
   stage: Push to Docker Hub
