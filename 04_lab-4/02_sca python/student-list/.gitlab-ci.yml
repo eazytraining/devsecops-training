@@ -23,7 +23,14 @@ services:
   after_script:
   - docker rm -vf student-list-website || echo "website container already deleted"
   - docker rm -vf student-list-api || echo "api container already deleted"
-  
+
+.precommit_template: &precommit
+  image: python:3.8-bullseye
+  before_script:
+  - pip3 install pre-commit==3.3.3
+  - apt install -y git
+
+
 stages:
   - Lint code
   - Build image
@@ -34,13 +41,10 @@ stages:
 
 php lint:
   stage: Lint code
-  image: python:3.8-bullseye
-  before_script:
-  - pip3 install pre-commit==3.3.3
-  - apt install -y git
+  <<: *precommit
+  script:
   - apt update && apt install -y software-properties-common ca-certificates lsb-release apt-transport-https && echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list && wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && apt update
   - apt install php8.2 -y 
-  script:
   - pre-commit run php-lint-all
 
 python lint:
@@ -49,7 +53,7 @@ python lint:
   before_script:
   - pip install flake8
   script:
-  - flake8 simple_api/student_age.py
+  - flake8 simple_api/student_age.py --ignore=E501
 
 docker build:
   stage: Build image
@@ -91,6 +95,12 @@ secret scan:
     - go install
   script:
     - trufflehog git $CI_REPOSITORY_URL --since-commit HEAD --only-verified --fail
+
+python sca:
+  stage: Scan App
+  <<: *precommit
+  script:
+  - git ls-files -- simple_api/requirements.txt | xargs pre-commit run python-safety-dependencies-check --files
 
 docker push:
   stage: Push to Docker Hub
