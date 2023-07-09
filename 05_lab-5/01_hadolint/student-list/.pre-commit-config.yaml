@@ -1,0 +1,16 @@
+repos:
+  - repo: https://github.com/digitalpulp/pre-commit-php.git
+    rev: 1.4.0
+    hooks:
+    - id: php-lint-all
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.1
+    hooks:
+    - id: python-safety-dependencies-check
+      files: requirements
+      args: ["--ignore=53326,53325,54456,55261"] # https://blog.appseed.us/how-to-fix-cannot-import-safe_str_cmp-from-werkzeug/ https://github.com/pallets/werkzeug/issues/2359
+  - repo: https://github.com/PyCQA/bandit.git
+    rev: 1.7.5
+    hooks:
+    - id: bandit
+      args: ["-s=B201", "--severity-level=high", "-r"]
