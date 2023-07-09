@@ -42,7 +42,15 @@ php lint:
   - apt install php8.2 -y 
   script:
   - pre-commit run --all-files
- 
+
+python lint:
+  stage: Lint code
+  image: python
+  before_script:
+  - pip install flake8
+  script:
+  - flake8 simple_api/student_age.py
+
 docker build:
   stage: Build image
   script:
