@@ -113,6 +113,7 @@ docker deploy:
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(mkdir -p ~/prod)'
   - sshpass -p "$SSH_PASSWORD" scp -o 'StrictHostKeyChecking=no' -P $SSH_PORT -r ./* $SSH_LOGIN@$SSH_HOST:/home/vagrant/prod/
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(cd ~/prod; docker compose down -v && docker compose pull && docker compose up -d)'
+  - sleep 10
   - curl "$NGORK_HTTP_URL" | grep -q "Student Checking App"
 
 dast:

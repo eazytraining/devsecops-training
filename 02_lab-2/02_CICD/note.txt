@@ -16,3 +16,5 @@ ngrok start --config ngrok.yml --all
 in project devsecops -> settings -> CI/CD -> Variables
 DOCKER_PASSWORD and DOCKER_PASSWORD for docker push
 NGROK_SSH_URL,NGORK_HTTP_URL, SSH_LOGIN and SSH_PASSWORD
+
+Pay attention to docker-compose file - image name need to have your own dockerhub ID (we will automate it later)

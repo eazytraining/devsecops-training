@@ -23,13 +23,45 @@ services:
   after_script:
   - docker rm -vf student-list-website || echo "website container already deleted"
   - docker rm -vf student-list-api || echo "api container already deleted"
-  
+
+.precommit_template: &precommit
+  image: python:3.8-bullseye
+  before_script:
+  - pip3 install pre-commit==3.3.3
+  - apt install -y git
+
+
 stages:
+  - Lint code
   - Build image
   - Test image
   - Scan App
   - Push to Docker Hub
   - Deploy App
+
+php lint:
+  stage: Lint code
+  <<: *precommit
+  script:
+  - apt update && apt install -y software-properties-common ca-certificates lsb-release apt-transport-https && echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list && wget -qO - https://packages.sury.org/php/apt.gpg | apt-key add - && apt update
+  - apt install php8.2 -y 
+  - pre-commit run php-lint-all
+
+python lint:
+  stage: Lint code
+  image: python
+  before_script:
+  - pip install flake8
+  script:
+  - flake8 simple_api/student_age.py --ignore=E501
+
+
+docker lint:
+  stage: Lint code
+  image: hadolint/hadolint:2.9.2-debian
+  script:
+    - hadolint --failure-threshold error simple_api/Dockerfile
+
 
 docker build:
   stage: Build image
@@ -72,6 +104,46 @@ secret scan:
   script:
     - trufflehog git $CI_REPOSITORY_URL --since-commit HEAD --only-verified --fail
 
+python sca:
+  stage: Scan App
+  <<: *precommit
+  script:
+  - git ls-files -- simple_api/requirements.txt | xargs pre-commit run python-safety-dependencies-check --files
+
+python sast:
+  stage: Scan App
+  <<: *precommit
+  script:
+    - git ls-files -- simple_api/student_age.py | xargs pre-commit run bandit --files
+
+docker scan:
+  stage: Scan App
+  variables:
+    image: student-list-api
+  only:
+  - main
+  before_script:
+  - export TRIVY_VERSION=$(wget -qO - "https://api.github.com/repos/aquasecurity/trivy/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+  - echo $TRIVY_VERSION
+  - wget --no-verbose https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz -O - | tar -zxvf -
+  script:
+  - docker load < student-list-api.tar
+  # Build report
+  - ./trivy image --exit-code 0 --cache-dir .trivycache/ --no-progress --format template --template "@contrib/junit.tpl" -o gl-container-scanning-report.xml $image
+  # Print report
+  - ./trivy image --exit-code 0 --cache-dir .trivycache/ --no-progress --severity HIGH $image
+  # Fail on severe vulnerabilities
+  - echo -e "CVE-2023-30861\nCVE-2023-25577\nCVE-2022-29361" > .trivyignore
+  - ./trivy image --exit-code 1 --cache-dir .trivycache/ --vuln-type library --severity CRITICAL --no-progress $image
+  cache:
+    paths:
+      - .trivycache/
+  artifacts:
+    reports:
+      junit:
+        - gl-container-scanning-report.xml
+
+
 docker push:
   stage: Push to Docker Hub
   only:
@@ -94,12 +166,14 @@ docker deploy:
     url: $NGORK_HTTP_URL
   before_script:
   - apk add --update sshpass openssh curl
-  - rm student-list-api.tar
+  - rm student-list-api.tar note.txt README.md  frontend-apache-report.xml || echo "Files deleted"
+  - echo -e "USERNAME=${API_LOGIN}\nPASSWORD=${API_PASSWORD}\nIMAGE_NAME=$DOCKER_USERNAME/student-list-api:${CI_COMMIT_SHORT_SHA}" > .env
   script:
   - SSH_HOST=$(echo "$NGROK_SSH_URL" | awk -F/ '{print $3}' | sed 's/:.*//')
   - SSH_PORT=$(echo "$NGROK_SSH_URL" | awk -F/ '{print $3}' | cut -f2 -d ':')
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(mkdir -p ~/prod)'
   - sshpass -p "$SSH_PASSWORD" scp -o 'StrictHostKeyChecking=no' -P $SSH_PORT -r ./* $SSH_LOGIN@$SSH_HOST:/home/vagrant/prod/
+  - sshpass -p "$SSH_PASSWORD" scp -o 'StrictHostKeyChecking=no' -P $SSH_PORT -r ./.env $SSH_LOGIN@$SSH_HOST:/home/vagrant/prod/
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(cd ~/prod; docker compose down -v && docker compose pull && docker compose up -d)'
   - sleep 10
   - curl "$NGORK_HTTP_URL" | grep -q "Student Checking App"
@@ -107,6 +181,7 @@ docker deploy:
 dast:
   image: owasp/zap2docker-stable
   stage: Deploy App
+  needs: ["docker deploy"]
   variables:
     website: $NGORK_HTTP_URL
   script:

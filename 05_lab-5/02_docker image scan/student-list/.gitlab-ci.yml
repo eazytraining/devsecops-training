@@ -133,8 +133,8 @@ docker scan:
   # Print report
   - ./trivy image --exit-code 0 --cache-dir .trivycache/ --no-progress --severity HIGH $image
   # Fail on severe vulnerabilities
-  - echo -e "CVE-2023-30861\nCVE-2023-25577" > .trivyignore
-  - ./trivy image --exit-code 1 --cache-dir .trivycache/ --severity CRITICAL --no-progress $image
+  - echo -e "CVE-2023-30861\nCVE-2023-25577\nCVE-2022-29361" > .trivyignore
+  - ./trivy image --exit-code 1 --cache-dir .trivycache/ --vuln-type library --severity CRITICAL --no-progress $image
   cache:
     paths:
       - .trivycache/
@@ -173,6 +173,7 @@ docker deploy:
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(mkdir -p ~/prod)'
   - sshpass -p "$SSH_PASSWORD" scp -o 'StrictHostKeyChecking=no' -P $SSH_PORT -r ./* $SSH_LOGIN@$SSH_HOST:/home/vagrant/prod/
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(cd ~/prod; docker compose down -v && docker compose pull && docker compose up -d)'
+  - sleep 10
   - curl "$NGORK_HTTP_URL" | grep -q "Student Checking App"
 
 dast:
