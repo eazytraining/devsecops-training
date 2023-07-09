@@ -67,7 +67,7 @@ docker build:
   stage: Build image
   script:
   - docker info
-  - docker build -t student-list-api ./simple_api
+  - docker build --no-cache -t student-list-api ./simple_api
   - docker save student-list-api > student-list-api.tar
   artifacts:
     paths:
