@@ -13,9 +13,8 @@ sudo snap install --classic code
 # install ngrok
 sudo snap install ngrok
 
-# install chrome
-wget https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb
-sudo dpkg -i google-chrome-stable_current_amd64.deb
+# install firefox
+sudo snap install firefox
 
 # install gitlab-runner
 curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
