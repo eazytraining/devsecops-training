@@ -14,7 +14,7 @@ sudo snap install --classic code
 sudo snap install ngrok
 
 # install firefox
-sudo snap install firefox
+sudo apt-get install firefox -y
 
 # install gitlab-runner
 curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | sudo bash
