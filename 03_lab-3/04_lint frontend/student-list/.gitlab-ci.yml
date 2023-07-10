@@ -103,7 +103,7 @@ docker deploy:
   stage: Deploy App
   environment:
     name: prod
-    url: $NGORK_HTTP_URL
+    url: $NGROK_HTTP_URL
   before_script:
   - apk add --update sshpass openssh curl
   - rm student-list-api.tar
@@ -114,13 +114,13 @@ docker deploy:
   - sshpass -p "$SSH_PASSWORD" scp -o 'StrictHostKeyChecking=no' -P $SSH_PORT -r ./* $SSH_LOGIN@$SSH_HOST:/home/vagrant/prod/
   - sshpass -p "$SSH_PASSWORD" ssh -o 'StrictHostKeyChecking=no' -p $SSH_PORT $SSH_LOGIN@$SSH_HOST '(cd ~/prod; docker compose down -v && docker compose pull && docker compose up -d)'
   - sleep 10
-  - curl "$NGORK_HTTP_URL" | grep -q "Student Checking App"
+  - curl "$NGROK_HTTP_URL" | grep -q "Student Checking App"
 
 dast:
   image: owasp/zap2docker-stable
   stage: Deploy App
   variables:
-    website: $NGORK_HTTP_URL
+    website: $NGROK_HTTP_URL
   script:
   - mkdir /zap/wrk/
   - /zap/zap-full-scan.py -J gl-dast-report.json -t $website || true
