@@ -15,7 +15,7 @@ services:
       - api-pozos
 
   api-pozos:
-    image: student-list-api:v1
+    image: <your dockerhub username>/student-list-api:latest
     volumes:
       - ./simple_api/student_age.json:/data/student_age.json
     networks:
