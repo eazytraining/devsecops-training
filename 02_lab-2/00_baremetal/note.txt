@@ -6,7 +6,13 @@ pip3 install flask==2.0.0 flask_httpauth==4.1.0 flask_simpleldap python-dotenv==
 
 
 sudo mkdir /data
+mkdir barmetal
+cd barmetal
+# copy all file from baremetal folder
+
 sudo cp student_age.json /data/student_age.json
+
+python3 student_age.py
 
 curl -u toto:python -X GET http://127.0.0.1:5000/pozos/api/v1.0/get_student_ages
 
