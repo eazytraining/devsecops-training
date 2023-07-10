@@ -23,7 +23,6 @@ curl -u toto:python -X GET http://127.0.0.1:5000/pozos/api/v1.0/get_student_ages
 
 sudo apt install -y apache2
 sudo systemctl start apache2
-sudo systemctl enable apache2
 
 sudo apt install -y php7.4 libapache2-mod-php7.4
 sudo a2enmod php7.4
