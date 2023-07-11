@@ -9,7 +9,7 @@ services:
 
 .run_template: &run
   before_script:
-  - apk add --update curl python3 && rm -rf /var/cahe/apk/*
+  - apk add --update curl python3 git && rm -rf /var/cahe/apk/*
   - docker load < student-list-api.tar
   - docker rm -vf student-list-website || echo "website container already deleted"
   - docker rm -vf student-list-api || echo "api container already deleted"
