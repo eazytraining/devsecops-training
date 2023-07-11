@@ -1,0 +1,22 @@
+cd
+mkdir elk
+cd elk
+mkdir logstash-agent
+touch logstash-agent/logstash.conf
+mkdir logstash-central
+touch logstash-central/logstash.conf
+mkdir elasticsearch_data
+chown -R 1000:1000 elasticsearch_data
+
+docker-compose up -d
+
+cd
+cd prod
+# update docker-compose.yml
+docker-compose down
+docker-compose up -d 
+
+# After testing please delete the elk stack
+cd
+cd elk
+docker-compose down
