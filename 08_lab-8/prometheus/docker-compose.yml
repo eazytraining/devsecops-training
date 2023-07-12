@@ -1,0 +1,82 @@
+version: '3.7'
+services:
+  prometheus:
+    image: prom/prometheus
+    restart: always
+    ports:
+      - "9090:9090/tcp"
+    networks:
+      - front
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+  exporter:
+    image: prom/node-exporter
+    restart: always
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - --collector.filesystem.ignored-mount-points
+      - "^/(sys|proc|dev|host|etc|rootfs/var/lib/docker/containers|rootfs/var/lib/docker/overlay2|rootfs/run/docker/netns|rootfs/var/lib/docker/aufs)($$|/)"
+    network_mode: host
+
+  cadvisor:
+    image: zcube/cadvisor
+    restart: always
+    privileged: true
+    devices:
+      - /dev/kmsg
+    ports:
+      - "8080:8080/tcp"
+    command:
+      - '--docker_only'
+      - '--disable_metrics=disk,diskIO,tcp,udp,percpu,sched,process'
+      - '--housekeeping_interval=10s'
+    networks:
+      front:
+        aliases:
+         - cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+
+  blackbox:
+    image: prom/blackbox-exporter
+    ports:
+    - 9115:9115
+    command:
+    - --config.file=/etc/blackbox/blackbox.yml
+    volumes:
+    - ./blackbox/blackbox.yml:/etc/blackbox/blackbox.yml
+    networks:
+      front:
+      
+  grafana:
+    image: grafana/grafana
+    ports:
+      - "3000:3000/tcp"
+    networks:
+      - front
+    volumes:
+      - grafana_data:/var/lib/grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+
+networks:
+  front:
+    driver: bridge
+
+volumes:
+  prometheus_data:
+  grafana_data:

@@ -1,0 +1,13 @@
+cd
+mkdir prometheus
+cd prometheus
+touch docker-compose.yml
+touch prometheus.yml
+mkdir blackbox
+touch blackbox/blackbox.yml
+
+docker compose up -d
+
+# dashboard used - node exporter = 1860; cadvisor = 14282; blackbox = 13659
+
+# after testing, please delete the stack to free your VM
