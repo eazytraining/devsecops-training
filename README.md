@@ -1,4 +1,4 @@
-﻿# devsecops
+﻿# DevSecOps [EAZYTraining](https://eazytraining.fr/cours/devsecops-securiser-vos-applications-et-infrastructures-a-lere-du-cloud-et-du-devops/)
 
 ## Prerequisites
 
